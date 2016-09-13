@@ -39,7 +39,7 @@ func (s *Service) run() {
 	r := mux.NewRouter()
 
 	files := http.FileServer(s.box.HTTPBox())
-	r.Methods("GET").Path("/").HandlerFunc(s.getHandler)
+	r.Methods("GET").Path("/").HandlerFunc(s.GetHomeHandler)
 
 	r.PathPrefix("/").Handler(files)
 
@@ -52,7 +52,8 @@ func (s *Service) run() {
 	}
 }
 
-func (s *Service) getHandler(w http.ResponseWriter, r *http.Request) {
+// GetHomeHandler Handles the home page request
+func (s *Service) GetHomeHandler(w http.ResponseWriter, r *http.Request) {
 	contentString, err := s.box.Bytes("static/index.html")
 	if err != nil {
 		log.Error("Error loading file: ", err)

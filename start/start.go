@@ -52,9 +52,24 @@ func Run() {
 		os.Exit(1)
 	}
 
-	qTime, _ := time.Parse("01/02/2006", "07/31/2016")
-	results, _ := unifier.QueryDate(qTime)
-	fmt.Printf("RESULTS: %#v\n", len(results))
+	sTime, _ := time.Parse("01/02/2006", "06/13/2016")
+	eTime, _ := time.Parse("01/02/2006", "06/14/2016")
+	results, _ := unifier.QueryDateRange(sTime, eTime)
+	fmt.Printf("Date Range Query: %#v\n\n", results)
+
+	dTime, _ := time.Parse("01/02/2006", "06/13/2016")
+	results, _ = unifier.QueryDay(dTime)
+	fmt.Printf("Day Query: %#v\n\n", results)
+
+	results, _ = unifier.QueryAmountRange(0.0, 10.00)
+	fmt.Printf("Amount Range Query: %#v\n\n", results)
+
+	results, _ = unifier.QueryAmount(1.06)
+	fmt.Printf("Amount Query: %#v\n\n", results)
+
+	// qTime, _ = time.Parse("01/02/2006", "07/31/2016")
+	// results, _ := unifier.QueryDate(qTime)
+	// fmt.Printf("RESULTS: %#v\n", len(results))
 
 	death.WaitForDeath(goRoutines...)
 

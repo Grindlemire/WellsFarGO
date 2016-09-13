@@ -96,12 +96,19 @@ func (q Query) QueryNodes(ids ...quad.Value) (results []Node) {
 	return results
 }
 
+// NodeExists checks the existence of a node
+func (q Query) NodeExists(id quad.Value) (exists bool) {
+	nodes, _ := cayley.StartPath(q.DB, id).Out().Iterate(nil).AllValues(nil)
+	if len(nodes) > 0 {
+		return true
+	}
+	return false
+}
+
 // parseNode Bad implementaion of parsing the struct out of the cayley response
 func parseNode(id quad.Value, nodeVals []quad.Value) (n Node) {
-	tStr, err := time.Parse("\"01/02/2006\"", quad.StringOf(nodeVals[0]))
-	if err != nil {
-		log.Error("Error converting Node query date to time: ", err)
-	}
+	tStr := time.Unix(quad.NativeOf(nodeVals[0]).(int64), 0)
+
 	n = Node{
 		ID:       quad.StringOf(id),
 		Date:     tStr,

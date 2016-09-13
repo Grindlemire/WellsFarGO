@@ -2,9 +2,9 @@ package unifier
 
 import (
 	"crypto/md5"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
-	"reflect"
 	"time"
 
 	"github.com/cayleygraph/cayley"
@@ -69,26 +69,35 @@ func (u Unifier) AddNewData() (err error) {
 
 // AddTransaction adds a transaction to the cayley database
 func (u Unifier) AddTransaction(t time.Time, trans format.Transaction) (err error) {
-	timeStr := t.Format("01/02/2006")
+	unixTime := t.Unix()
 	tranByte, err := json.Marshal(trans)
 	if err != nil {
 		return log.Error("Error marshalling transaction: ", err)
 	}
-	timeByte := []byte(timeStr)
+	timeByte := make([]byte, 8)
+	binary.LittleEndian.PutUint64(timeByte, uint64(unixTime))
 	key := append(tranByte, timeByte...)
 
 	hasher := md5.New()
 	hasher.Write(key)
 	idStr := hex.EncodeToString(hasher.Sum(nil))
 
-	err = u.AddRelationship(idStr, "date", timeStr)
+	q := &query.Query{
+		DB: u.db,
+	}
+
+	if q.NodeExists(quad.String(idStr)) {
+		return nil
+	}
+
+	err = u.AddRelationship(idStr, "date", unixTime)
 	if err != nil {
 		return err
 	}
 
 	err = u.AddRelationship(idStr, "amount", trans.Amount)
 	if err != nil {
-		rErr := u.RemoveRelationship(idStr, "date", timeStr)
+		rErr := u.RemoveRelationship(idStr, "date", unixTime)
 		if rErr != nil {
 			log.Critical("Error Rolling back after an error: ", rErr)
 		}
@@ -97,7 +106,7 @@ func (u Unifier) AddTransaction(t time.Time, trans format.Transaction) (err erro
 
 	err = u.AddRelationship(idStr, "location", trans.Location)
 	if err != nil {
-		rErr := u.RemoveRelationship(idStr, "date", timeStr)
+		rErr := u.RemoveRelationship(idStr, "date", unixTime)
 		if rErr != nil {
 			log.Critical("Error Rolling back after an error: ", rErr)
 		}
@@ -115,14 +124,6 @@ func (u Unifier) AddTransaction(t time.Time, trans format.Transaction) (err erro
 func (u Unifier) AddRelationship(n, r string, val interface{}) (err error) {
 	if !checkType(val) {
 		return log.Error("Must store a primitive as a value")
-	}
-
-	q := &query.Query{
-		DB: u.db,
-	}
-	results := q.QueryNodes(quad.String(n))
-	if len(results) > 0 {
-		return nil
 	}
 
 	err = u.db.AddQuad(quad.Make(n, r, val, nil))
@@ -145,38 +146,37 @@ func (u Unifier) RemoveRelationship(n, r string, val interface{}) (err error) {
 	return err
 }
 
-// QueryDate query for a specific date in the graph
-func (u Unifier) QueryDate(t time.Time) (results []query.Node, err error) {
-
-	q := &query.Query{
-		DB:    u.db,
-		Nodes: []string{},
-		Relations: []query.RQuery{
-			query.RQuery{
-				Name: "date",
-				Val:  t.Format("01/02/2006"),
-				Type: "Out",
-			},
-		},
-	}
-
-	results, err = q.Execute()
-	if err != nil {
-		log.Error("Error Executing Query: ", err)
-		return []query.Node{}, nil
-	}
-
-	return results, err
-}
+// // QueryDate query for a specific date in the graph
+// func (u Unifier) QueryDate(t time.Time) (results []query.Node, err error) {
+//
+// 	q := &query.Query{
+// 		DB:    u.db,
+// 		Nodes: []string{},
+// 		Relations: []query.RQuery{
+// 			query.RQuery{
+// 				Name: "date",
+// 				Val:  t.Format("01/02/2006"),
+// 				Type: "Out",
+// 			},
+// 		},
+// 	}
+//
+// 	results, err = q.Execute()
+// 	if err != nil {
+// 		log.Error("Error Executing Query: ", err)
+// 		return []query.Node{}, nil
+// 	}
+//
+// 	return results, err
+// }
 
 func checkType(val interface{}) bool {
-	theType := reflect.TypeOf(val).String()
-	switch theType {
-	case "string":
+	switch val.(type) {
+	case string:
 		return true
-	case "int":
+	case int64, int32:
 		return true
-	case "float64":
+	case float64, float32:
 		return true
 	}
 	return false
