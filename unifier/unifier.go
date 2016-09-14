@@ -13,8 +13,6 @@ import (
 	"github.com/cayleygraph/cayley/quad"
 	log "github.com/cihub/seelog"
 	"github.com/grindlemire/WellsFarGO/format"
-	"github.com/grindlemire/WellsFarGO/query"
-	// "github.com/cayleygraph/cayley/quad"
 )
 
 const dbExistsErr = "quadstore: cannot init; database already exists"
@@ -82,11 +80,7 @@ func (u Unifier) AddTransaction(t time.Time, trans format.Transaction) (err erro
 	hasher.Write(key)
 	idStr := hex.EncodeToString(hasher.Sum(nil))
 
-	q := &query.Query{
-		DB: u.db,
-	}
-
-	if q.NodeExists(quad.String(idStr)) {
+	if u.NodeExists(quad.String(idStr)) {
 		return nil
 	}
 
@@ -145,30 +139,6 @@ func (u Unifier) RemoveRelationship(n, r string, val interface{}) (err error) {
 	}
 	return err
 }
-
-// // QueryDate query for a specific date in the graph
-// func (u Unifier) QueryDate(t time.Time) (results []query.Node, err error) {
-//
-// 	q := &query.Query{
-// 		DB:    u.db,
-// 		Nodes: []string{},
-// 		Relations: []query.RQuery{
-// 			query.RQuery{
-// 				Name: "date",
-// 				Val:  t.Format("01/02/2006"),
-// 				Type: "Out",
-// 			},
-// 		},
-// 	}
-//
-// 	results, err = q.Execute()
-// 	if err != nil {
-// 		log.Error("Error Executing Query: ", err)
-// 		return []query.Node{}, nil
-// 	}
-//
-// 	return results, err
-// }
 
 func checkType(val interface{}) bool {
 	switch val.(type) {

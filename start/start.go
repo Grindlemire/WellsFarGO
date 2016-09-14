@@ -67,9 +67,8 @@ func Run() {
 	results, _ = unifier.QueryAmount(1.06)
 	fmt.Printf("Amount Query: %#v\n\n", results)
 
-	// qTime, _ = time.Parse("01/02/2006", "07/31/2016")
-	// results, _ := unifier.QueryDate(qTime)
-	// fmt.Printf("RESULTS: %#v\n", len(results))
+	results, _ = unifier.QueryLocation("TACO BELL 302600302646 BROOMFIELD CO")
+	fmt.Printf("Amount Query: %#v\n\n", results)
 
 	death.WaitForDeath(goRoutines...)
 

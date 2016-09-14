@@ -7,11 +7,18 @@ import (
 	"github.com/cayleygraph/cayley/graph/iterator"
 	"github.com/cayleygraph/cayley/quad"
 	log "github.com/cihub/seelog"
-	"github.com/grindlemire/WellsFarGO/query"
 )
 
+// Node a node returned from the graph database
+type Node struct {
+	ID       string
+	Date     time.Time
+	Location string
+	Amount   float64
+}
+
 // QueryDateRange query for a specific date in the graph
-func (u Unifier) QueryDateRange(start, end time.Time) (results []query.Node, err error) {
+func (u Unifier) QueryDateRange(start, end time.Time) (results []Node, err error) {
 
 	path := cayley.StartPath(u.db).
 		Filter(iterator.CompareLT, quad.Int(end.Unix())).
@@ -23,7 +30,7 @@ func (u Unifier) QueryDateRange(start, end time.Time) (results []query.Node, err
 }
 
 // QueryDay query for a specific date in the graph
-func (u Unifier) QueryDay(day time.Time) (results []query.Node, err error) {
+func (u Unifier) QueryDay(day time.Time) (results []Node, err error) {
 
 	path := cayley.StartPath(u.db).
 		Has("date", quad.Int(day.Unix()))
@@ -35,7 +42,7 @@ func (u Unifier) QueryDay(day time.Time) (results []query.Node, err error) {
 }
 
 // QueryAmount query for a specific amount
-func (u Unifier) QueryAmount(amount float64) (results []query.Node, err error) {
+func (u Unifier) QueryAmount(amount float64) (results []Node, err error) {
 
 	path := cayley.StartPath(u.db).
 		Has("amount", quad.Float(amount))
@@ -47,7 +54,7 @@ func (u Unifier) QueryAmount(amount float64) (results []query.Node, err error) {
 }
 
 // QueryAmountRange query for a specific range of ammounts
-func (u Unifier) QueryAmountRange(lower, upper float64) (results []query.Node, err error) {
+func (u Unifier) QueryAmountRange(lower, upper float64) (results []Node, err error) {
 
 	path := cayley.StartPath(u.db).
 		Filter(iterator.CompareLT, quad.Float(upper)).
@@ -59,7 +66,19 @@ func (u Unifier) QueryAmountRange(lower, upper float64) (results []query.Node, e
 	return results, err
 }
 
-func (u Unifier) parseResults(ids ...quad.Value) (results []query.Node, err error) {
+// QueryLocation query for a specific location
+func (u Unifier) QueryLocation(location string) (results []Node, err error) {
+
+	path := cayley.StartPath(u.db).
+		Has("location", quad.String(location))
+
+	nodes, err := path.Iterate(nil).AllValues(nil)
+
+	results, err = u.parseResults(nodes...)
+	return results, err
+}
+
+func (u Unifier) parseResults(ids ...quad.Value) (results []Node, err error) {
 	// QueryNodes query a node by id
 	for _, id := range ids {
 		m := map[string]interface{}{}
@@ -69,7 +88,7 @@ func (u Unifier) parseResults(ids ...quad.Value) (results []query.Node, err erro
 			nodeVals, err = cayley.StartPath(u.db, id).Out(t).Iterate(nil).AllValues(nil)
 			if err != nil {
 				log.Error("Error getting value of node: ", err)
-				return []query.Node{}, nil
+				return []Node{}, nil
 			}
 			if len(nodeVals) > 0 {
 				m[t] = quad.NativeOf(nodeVals[0])
@@ -78,7 +97,7 @@ func (u Unifier) parseResults(ids ...quad.Value) (results []query.Node, err erro
 		}
 
 		uTime := int64(m["date"].(int))
-		n := query.Node{
+		n := Node{
 			ID:       quad.StringOf(id),
 			Date:     time.Unix(uTime, 0),
 			Amount:   m["amount"].(float64),
@@ -88,4 +107,13 @@ func (u Unifier) parseResults(ids ...quad.Value) (results []query.Node, err erro
 		results = append(results, n)
 	}
 	return results, nil
+}
+
+// NodeExists checks the existence of a node
+func (u Unifier) NodeExists(id quad.Value) (exists bool) {
+	nodes, _ := cayley.StartPath(u.db, id).Out().Iterate(nil).AllValues(nil)
+	if len(nodes) > 0 {
+		return true
+	}
+	return false
 }
