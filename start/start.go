@@ -1,12 +1,10 @@
 package start
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"strconv"
 	SYS "syscall"
-	"time"
 
 	log "github.com/cihub/seelog"
 	"github.com/grindlemire/WellsFarGO/rest"
@@ -26,16 +24,6 @@ func Run() {
 		os.Exit(1)
 	}
 
-	port, err := GetEnvInt("SERVER_PORT")
-	if err != nil {
-		log.Critical("Unable to parse port in .env file: ", err)
-		os.Exit(1)
-	}
-
-	restService := rest.NewRestService(port)
-	goRoutines = append(goRoutines, restService)
-	restService.Start()
-
 	dbFile := os.Getenv("DB_FILE")
 	csvFile := os.Getenv("CSV_FILE")
 	formatType := os.Getenv("FORMAT_TYPE")
@@ -52,23 +40,34 @@ func Run() {
 		os.Exit(1)
 	}
 
-	sTime, _ := time.Parse("01/02/2006", "06/13/2016")
-	eTime, _ := time.Parse("01/02/2006", "06/14/2016")
-	results, _ := unifier.QueryDateRange(sTime, eTime)
-	fmt.Printf("Date Range Query: %#v\n\n", results)
+	// sTime, _ := time.Parse("01/02/2006", "06/13/2016")
+	// eTime, _ := time.Parse("01/02/2006", "06/14/2016")
+	// results, _ := unifier.QueryDateRange(sTime, eTime)
+	// fmt.Printf("Date Range Query: %#v\n\n", results)
+	//
+	// dTime, _ := time.Parse("01/02/2006", "06/13/2016")
+	// results, _ = unifier.QueryDay(dTime)
+	// fmt.Printf("Day Query: %#v\n\n", results)
+	//
+	// results, _ = unifier.QueryAmountRange(0.0, 10.00)
+	// fmt.Printf("Amount Range Query: %#v\n\n", results)
+	//
+	// results, _ = unifier.QueryAmount(1.06)
+	// fmt.Printf("Amount Query: %#v\n\n", results)
+	//
+	// results, _ = unifier.QueryLocation("TACO BELL 302600302646 BROOMFIELD CO")
+	// fmt.Printf("Amount Query: %#v\n\n", results)
 
-	dTime, _ := time.Parse("01/02/2006", "06/13/2016")
-	results, _ = unifier.QueryDay(dTime)
-	fmt.Printf("Day Query: %#v\n\n", results)
+	// WEBSERVER
+	port, err := GetEnvInt("SERVER_PORT")
+	if err != nil {
+		log.Critical("Unable to parse port in .env file: ", err)
+		os.Exit(1)
+	}
 
-	results, _ = unifier.QueryAmountRange(0.0, 10.00)
-	fmt.Printf("Amount Range Query: %#v\n\n", results)
-
-	results, _ = unifier.QueryAmount(1.06)
-	fmt.Printf("Amount Query: %#v\n\n", results)
-
-	results, _ = unifier.QueryLocation("TACO BELL 302600302646 BROOMFIELD CO")
-	fmt.Printf("Amount Query: %#v\n\n", results)
+	restService := rest.NewRestService(port, unifier)
+	goRoutines = append(goRoutines, restService)
+	restService.Start()
 
 	death.WaitForDeath(goRoutines...)
 

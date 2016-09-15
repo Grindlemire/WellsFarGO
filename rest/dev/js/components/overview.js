@@ -23,6 +23,7 @@ class OverviewComponent extends React.Component {
         if(err !== null) {
             var errElem = <div class="error">Error: {err}</div>
         }
+
         return(
             <div className="row">
                 <div className="col s12">

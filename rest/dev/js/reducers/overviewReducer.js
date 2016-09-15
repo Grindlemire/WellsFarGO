@@ -1,6 +1,6 @@
 
 var defaultOverview = {
-    data: "Before fetch",
+    data: [],
     pending: false,
     err: null
 };

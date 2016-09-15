@@ -8,16 +8,18 @@ import (
 	rice "github.com/GeertJohan/go.rice"
 	log "github.com/cihub/seelog"
 	"github.com/gorilla/mux"
+	"github.com/grindlemire/WellsFarGO/unifier"
 )
 
 // Service configures the rest endpoints
 type Service struct {
 	box  *rice.Box
 	port int
+	U    *unifier.Unifier
 }
 
 // NewRestService creates a new REST service object
-func NewRestService(port int) (s *Service) {
+func NewRestService(port int, u *unifier.Unifier) (s *Service) {
 	box, err := rice.FindBox("build")
 	if err != nil {
 		log.Critical("Cannot find webserver build directory. Did you build the webserver (npm run buildDev)?")
@@ -26,6 +28,7 @@ func NewRestService(port int) (s *Service) {
 	return &Service{
 		box:  box,
 		port: port,
+		U:    u,
 	}
 }
 
@@ -40,6 +43,10 @@ func (s *Service) run() {
 
 	files := http.FileServer(s.box.HTTPBox())
 	r.Methods("GET").Path("/").HandlerFunc(s.GetHomeHandler)
+	r.Methods("POST").Path("/transactions/range").HandlerFunc(s.TransactionsInRangeHandler)
+	r.Methods("POST").Path("/transactions/day").HandlerFunc(s.TransactionsInDateHandler)
+	r.Methods("POST").Path("/transactions/amount").HandlerFunc(s.TransactionsAmountHandler)
+	r.Methods("POST").Path("/transactions/location").HandlerFunc(s.TransactionsLocationHandler)
 
 	r.PathPrefix("/").Handler(files)
 
