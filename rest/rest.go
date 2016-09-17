@@ -54,7 +54,7 @@ func (s *Service) run() {
 	err := http.ListenAndServe(fmt.Sprintf(":%v", s.port), r)
 	// err := SSL.ListenAndServeTLS(fmt.Sprintf(":%d", s.port), "server.crt", "server.key", r)
 	if nil != err {
-		log.Critical("Failed to listen on port ", 3000, " err: ", err)
+		log.Critical("Failed to listen on port ", s.port, " err: ", err)
 		os.Exit(2)
 	}
 }

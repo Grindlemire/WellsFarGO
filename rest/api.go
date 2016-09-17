@@ -45,7 +45,6 @@ func (s Service) TransactionsInRangeHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	w.Write(rStr)
-
 	return
 }
 

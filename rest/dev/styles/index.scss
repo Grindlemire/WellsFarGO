@@ -13,3 +13,24 @@
   @extend .message;
   border-color: red;
 }
+
+
+.logRow {
+    border: 1px solid #222;
+    padding: 10px;
+}
+
+.redRow {
+    @extend .logRow;
+    background-color: red;
+}
+
+.greenRow {
+    @extend .logRow;
+    background-color: green;
+}
+
+.logCell {
+    border: 1px solid #222;
+    padding: 10px;
+}

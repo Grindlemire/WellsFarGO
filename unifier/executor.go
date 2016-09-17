@@ -11,10 +11,10 @@ import (
 
 // Node a node returned from the graph database
 type Node struct {
-	ID       string
-	Date     time.Time
-	Location string
-	Amount   float64
+	ID       string  `json:"id"`
+	Date     string  `json:"date"`
+	Location string  `json:"location"`
+	Amount   float64 `json:"amount"`
 }
 
 // QueryDateRange query for a specific date in the graph
@@ -97,9 +97,12 @@ func (u Unifier) parseResults(ids ...quad.Value) (results []Node, err error) {
 		}
 
 		uTime := int64(m["date"].(int))
+		t := time.Unix(uTime, 0)
+		tStr := t.Format("01/02/2006")
+		idStr := quad.StringOf(id)
 		n := Node{
-			ID:       quad.StringOf(id),
-			Date:     time.Unix(uTime, 0),
+			ID:       idStr,
+			Date:     tStr,
 			Amount:   m["amount"].(float64),
 			Location: m["location"].(string),
 		}

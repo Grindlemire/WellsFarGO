@@ -35,7 +35,7 @@ module.exports = {
             },
             {
                test: /\.(png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)$/,
-               loader: 'file?name=stylesheets/libs/[name].[ext]',
+               loader: 'file?name=styles/libs/[name].[ext]',
             },
             {
                 test: /\.js?$/,
