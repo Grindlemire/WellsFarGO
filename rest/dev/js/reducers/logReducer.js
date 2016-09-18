@@ -1,6 +1,8 @@
 
 var defaultLog = {
     data: [],
+    order: "date",
+    asc: true,
     pending: false,
     err: null
 };
@@ -31,6 +33,15 @@ export default function reducer(state=defaultLog , action){
                 {
                     err: action.payload,
                     pending: false
+                }
+            );
+            break;
+        }
+        case "CLICK_LOG_SORT": {
+            newState = Object.assign({}, state,
+                {
+                    order: action.payload.order,
+                    asc: action.payload.asc
                 }
             );
             break;

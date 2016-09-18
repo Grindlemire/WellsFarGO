@@ -25,7 +25,6 @@ export function fetchLog(entity) {
 
         axios(req)
             .then((response) => {
-                console.log("RESPONSE", response.data)
                 dispatch({
                     type: "FETCH_LOG_FULFILLED",
                     payload: response.data

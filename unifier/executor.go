@@ -1,6 +1,7 @@
 package unifier
 
 import (
+	"strings"
 	"time"
 
 	"github.com/cayleygraph/cayley"
@@ -99,7 +100,10 @@ func (u Unifier) parseResults(ids ...quad.Value) (results []Node, err error) {
 		uTime := int64(m["date"].(int))
 		t := time.Unix(uTime, 0)
 		tStr := t.Format("01/02/2006")
-		idStr := quad.StringOf(id)
+		idWithQuotes := quad.StringOf(id)
+		idArr := strings.Split(idWithQuotes, "\"")
+		idStr := idArr[1]
+
 		n := Node{
 			ID:       idStr,
 			Date:     tStr,
