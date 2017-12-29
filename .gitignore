@@ -25,6 +25,5 @@ _testmain.go
 
 
 # custom
-node_modules/
-rest/build/
 data/
+WellsFarGO

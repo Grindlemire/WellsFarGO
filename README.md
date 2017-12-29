@@ -1,2 +1,3 @@
 # WellsFarGO
-Server that digests Wells Fargo csv account data and renders visualizations on them
+
+A quick parser and persister of WellsFargo download files for personal organization. Still a WIP.
