@@ -5,26 +5,20 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strconv"
-	"time"
+
+	"github.com/grindlemire/WellsFarGO/money"
+	"github.com/grindlemire/WellsFarGO/postgres"
 
 	log "github.com/cihub/seelog"
-	bolt "github.com/coreos/bbolt"
 	"github.com/grindlemire/seezlog"
 	"github.com/jessevdk/go-flags"
 )
 
 // Opts are options you can pass into the cli
 type Opts struct {
-	File   string `short:"f" long:"file" description:"The csv file you want to parse" required:"true"`
-	DBPath string `short:"d" long:"db" description:"The DB file you will be persisting in" default:"mydb.bolt"`
-}
-
-// Transaction represents a single transaction from the file
-type Transaction struct {
-	Amount  float64
-	Date    time.Time
-	Comment string
+	Account       string  `short:"a" long:"account" description:"The account that this file is for" default:"checking"`
+	File          string  `short:"f" long:"file" description:"The csv file you want to parse" required:"true"`
+	InitialAmount float64 `long:"initial-amount" description:"The initial amount of money in the bank account" default:"0"`
 }
 
 var (
@@ -56,98 +50,49 @@ func main() {
 	log.Infof("Config: %#v", opts)
 
 	// Parse incoming file
-	transactions, err := parseFile(opts.File)
+	transactions, err := parseFile(opts.Account, opts.File)
 	if err != nil {
 		log.Error("Error parsing file: ", err)
 		exit(1)
 	}
+	transactions = money.InsertInitialTransaction(transactions, opts.Account, opts.InitialAmount)
 
-	// Insert into DB file
-	err = persistTransactions(transactions, opts.DBPath)
+	c, err := postgres.NewConnection()
+	if err != nil {
+		log.Error("Error establishing connection to postgres: ", err)
+		exit(1)
+	}
+
+	rowsInserted, err := c.InsertTransactions(transactions)
 	if err != nil {
 		log.Error("Error persisting transactions: ", err)
 		exit(1)
 	}
 
-	// Get current budget file
-
-	// Update current budget file
+	log.Infof("Inserted %d new transactions", rowsInserted)
 }
 
-func persistTransactions(ts []Transaction, dbPath string) (err error) {
-	db, err := bolt.Open(dbPath, 0600, &bolt.Options{Timeout: 1 * time.Second})
-	if err != nil {
-		return err
-	}
-
-	err = db.Update(func(tx *bolt.Tx) (err error) {
-		accountBucket := tx.Bucket([]byte("Checking"))
-		if accountBucket == nil {
-			accountBucket, err = tx.CreateBucket([]byte("Checking"))
-			if err != nil {
-				return err
-			}
-		}
-
-		for _, t := range ts {
-			timeBucket := accountBucket.Bucket([]byte(t.Date.Format("01/02/2006")))
-			if timeBucket == nil {
-				timeBucket, err = accountBucket.CreateBucket([]byte(t.Date.Format("01/02/2006")))
-				if err != nil && err != bolt.ErrBucketExists {
-					return err
-				}
-			}
-
-			timeBucket.Put([]byte(strconv.FormatFloat(t.Amount, 'f', 2, 64)), []byte(t.Comment))
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func parseFile(file string) (transactions []Transaction, err error) {
+func parseFile(account, file string) (transactions []money.Transaction, err error) {
 	f, err := os.Open(file)
 	if err != nil {
 		return nil, err
 	}
 
 	r := csv.NewReader(f)
-	rawCSV, err := r.ReadAll()
+	allRawCSV, err := r.ReadAll()
 	if err != nil {
 		return nil, err
 	}
 
-	for _, t := range rawCSV {
-		if len(t) != 5 {
-			return transactions, ErrUnexpectedFileFormat
-		}
-
-		currTime, err := time.Parse("01/02/2006", t[0])
+	for _, rawCSV := range allRawCSV {
+		t, err := money.NewTransactionFromCSV(account, rawCSV)
 		if err != nil {
 			return transactions, err
 		}
-
-		amount, err := strconv.ParseFloat(t[1], 64)
-		if err != nil {
-			return transactions, err
-		}
-
-		comment := t[4]
-
-		currTransaction := Transaction{
-			Amount:  amount,
-			Comment: comment,
-			Date:    currTime,
-		}
-		transactions = append(transactions, currTransaction)
+		transactions = append(transactions, t)
 	}
 
 	return transactions, nil
-
 }
 
 func exit(status int) {
