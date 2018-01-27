@@ -16,9 +16,9 @@ import (
 
 // Opts are options you can pass into the cli
 type Opts struct {
-	Account       string  `short:"a" long:"account" description:"The account that this file is for" default:"checking"`
-	File          string  `short:"f" long:"file" description:"The csv file you want to parse" required:"true"`
-	InitialAmount float64 `long:"initial-amount" description:"The initial amount of money in the bank account" default:"0"`
+	Account       string   `short:"a" long:"account" description:"The account that this file is for" default:"checking"`
+	Files         []string `short:"f" long:"file" description:"The csv file you want to parse" required:"true"`
+	InitialAmount float64  `long:"initial-amount" description:"The initial amount of money in the bank account" default:"0"`
 }
 
 var (
@@ -49,12 +49,18 @@ func main() {
 
 	log.Infof("Config: %#v", opts)
 
-	// Parse incoming file
-	transactions, err := parseFile(opts.Account, opts.File)
-	if err != nil {
-		log.Error("Error parsing file: ", err)
-		exit(1)
+	var transactions []money.Transaction
+	for _, file := range opts.Files {
+		// Parse incoming file
+		currTransactions, err := parseFile(opts.Account, file)
+		if err != nil {
+			log.Error("Error parsing file: ", err)
+			exit(1)
+		}
+
+		transactions = append(transactions, currTransactions...)
 	}
+
 	transactions = money.InsertInitialTransaction(transactions, opts.Account, opts.InitialAmount)
 
 	c, err := postgres.NewConnection()

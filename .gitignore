@@ -27,3 +27,4 @@ _testmain.go
 # custom
 data/
 WellsFarGO
+loader.sh
